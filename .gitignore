@@ -1,0 +1,4 @@
+# Fichiers sensibles à ignorer par Git
+token_ngrok.txt
+ngrok.yml
+.env
