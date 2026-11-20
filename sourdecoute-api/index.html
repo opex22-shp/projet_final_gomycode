@@ -1,0 +1,1065 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0a0e17">
+<title>AudiSense</title>
+<style>
+  :root {
+    --bg: #0a0e17;
+    --bg-card: #141b29;
+    --bg-card-2: #1c2536;
+    --text: #eef2f8;
+    --text-dim: #8fa0b8;
+    --accent: #2f7df6;
+    --accent-2: #1e5fc4;
+    --ok: #22c55e;
+    --warn: #f59e0b;
+    --danger: #ef4444;
+    --radius: 16px;
+    --shadow: 0 6px 24px rgba(0,0,0,.45);
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    min-height: 100vh;
+    padding-bottom: 32px;
+    line-height: 1.4;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 640px; margin: 0 auto; padding: 16px 16px 0; }
+
+  /* En-tête */
+  header.app-header {
+    text-align: center;
+    padding: 22px 12px 14px;
+  }
+  header.app-header h1 {
+    margin: 0;
+    font-size: clamp(1.7rem, 7vw, 2.4rem);
+    font-weight: 800;
+    letter-spacing: .5px;
+    background: linear-gradient(90deg, #6db3ff, #2f7df6 55%, #a78bfa);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  header.app-header p {
+    margin: 6px 0 0;
+    font-size: clamp(.85rem, 3.4vw, 1rem);
+    color: var(--text-dim);
+  }
+
+  /* Bouton principal */
+  .btn-main {
+    display: block;
+    width: 100%;
+    border: none;
+    border-radius: var(--radius);
+    padding: 22px 16px;
+    font-size: clamp(1.15rem, 4.6vw, 1.4rem);
+    font-weight: 800;
+    letter-spacing: .4px;
+    color: #fff;
+    background: linear-gradient(180deg, #3b8bff, var(--accent-2));
+    box-shadow: var(--shadow), inset 0 1px 0 rgba(255,255,255,.25);
+    cursor: pointer;
+    transition: transform .08s ease, filter .15s ease;
+    touch-action: manipulation;
+  }
+  .btn-main:active { transform: scale(.985); filter: brightness(1.1); }
+  .btn-main.actif {
+    background: linear-gradient(180deg, #ff5b5b, #c62828);
+  }
+
+  /* Carte générique */
+  .card {
+    background: var(--bg-card);
+    border: 1px solid rgba(255,255,255,.06);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-top: 14px;
+    box-shadow: var(--shadow);
+  }
+  .card h2 {
+    margin: 0 0 12px;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+  }
+
+  /* Statut */
+  .statut-ligne {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: clamp(1rem, 4vw, 1.15rem);
+    font-weight: 600;
+    min-height: 32px;
+  }
+  .pastille {
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: #55637a;
+    flex: 0 0 auto;
+  }
+  .pastille.ecoute {
+    background: var(--ok);
+    box-shadow: 0 0 0 0 rgba(34,197,94,.7);
+    animation: pulse 1.2s infinite;
+  }
+  .pastille.analyse { background: var(--accent); animation: pulse 1s infinite; }
+  .pastille.erreur { background: var(--danger); }
+  .pastille.silence { background: #64748b; }
+  .pastille.inconnu { background: var(--warn); }
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(34,197,94,.65); }
+    70% { box-shadow: 0 0 0 14px rgba(34,197,94,0); }
+    100% { box-shadow: 0 0 0 0 rgba(34,197,94,0); }
+  }
+  .statut-detail {
+    margin-top: 8px;
+    font-size: .9rem;
+    color: var(--text-dim);
+    word-break: break-word;
+  }
+
+  /* Écran d'alerte */
+  #ecranAlerte {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 24px;
+    color: #fff;
+  }
+  #ecranAlerte.visible { display: flex; }
+  #ecranAlerte.fond-danger { animation: clignoteRouge 1s steps(1) infinite; }
+  #ecranAlerte.fond-info { animation: clignoteBleu 1s steps(1) infinite; }
+  @keyframes clignoteRouge {
+    0%, 100% { background: #b91c1c; }
+    50% { background: #7f1d1d; }
+  }
+  @keyframes clignoteBleu {
+    0%, 100% { background: #1d4ed8; }
+    50% { background: #1e3a8a; }
+  }
+  .alerte-contenu { max-width: 560px; }
+  .alerte-emoji {
+    font-size: clamp(4.5rem, 28vw, 9rem);
+    line-height: 1.1;
+    filter: drop-shadow(0 4px 18px rgba(0,0,0,.5));
+  }
+  .alerte-nom {
+    font-size: clamp(1.8rem, 8vw, 2.8rem);
+    font-weight: 900;
+    margin: 8px 0 6px;
+    text-shadow: 0 2px 10px rgba(0,0,0,.55);
+  }
+  .alerte-meta {
+    font-size: clamp(1.05rem, 4.6vw, 1.35rem);
+    font-weight: 700;
+    opacity: .95;
+  }
+  .alerte-fermer {
+    margin-top: 28px;
+    background: rgba(0,0,0,.35);
+    color: #fff;
+    border: 2px solid rgba(255,255,255,.65);
+    border-radius: 999px;
+    padding: 16px 34px;
+    font-size: 1.1rem;
+    font-weight: 800;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  .alerte-fermer:active { background: rgba(0,0,0,.55); }
+
+  /* Montre simulée */
+  .montre-bloc {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+  }
+  .montre-ecran {
+    width: 120px; height: 120px;
+    border-radius: 50%;
+    background: #05070c;
+    border: 5px solid #2b3548;
+    box-shadow: inset 0 0 22px rgba(0,0,0,.9), 0 0 0 3px #0f1623, var(--shadow);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 14px;
+    flex: 0 0 auto;
+    transition: box-shadow .2s;
+  }
+  .montre-ecran.allumee {
+    border-color: #3b8bff;
+    box-shadow: inset 0 0 26px rgba(59,139,255,.35), 0 0 22px rgba(59,139,255,.55), 0 0 0 3px #0f1623;
+  }
+  .montre-ecran.vibre { animation: vibreMontre .35s linear 4; }
+  @keyframes vibreMontre {
+    0%,100% { transform: translateX(0); }
+    25% { transform: translateX(-4px); }
+    75% { transform: translateX(4px); }
+  }
+  .montre-texte {
+    font-size: .72rem;
+    font-weight: 800;
+    color: #cfe1ff;
+    line-height: 1.25;
+    word-break: break-word;
+  }
+  .montre-legende { font-size: .9rem; color: var(--text-dim); }
+
+  /* Barres de scores */
+  .scores-liste { display: flex; flex-direction: column; gap: 10px; }
+  .score-item { font-size: .88rem; }
+  .score-haut {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 4px;
+    color: var(--text);
+    font-weight: 600;
+  }
+  .score-haut .pct { color: var(--text-dim); flex: 0 0 auto; font-variant-numeric: tabular-nums; }
+  .score-piste {
+    height: 12px;
+    background: #0b1220;
+    border-radius: 999px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,.05);
+  }
+  .score-remplissage {
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #3b8bff, #6db3ff);
+    width: 0%;
+    transition: width .45s ease;
+  }
+  .score-item:first-child .score-remplissage { background: linear-gradient(90deg, #22c55e, #7ee2a8); }
+
+  /* Historique */
+  .histo-liste { display: flex; flex-direction: column; gap: 8px; }
+  .histo-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--bg-card-2);
+    border-radius: 12px;
+    padding: 12px 14px;
+    font-size: 1rem;
+  }
+  .histo-item .h-emoji { font-size: 1.5rem; flex: 0 0 auto; }
+  .histo-item .h-nom { flex: 1 1 auto; font-weight: 600; }
+  .histo-item .h-heure { color: var(--text-dim); font-variant-numeric: tabular-nums; font-size: .9rem; }
+  .vide { color: var(--text-dim); font-size: .92rem; font-style: italic; }
+
+  .separateur { height: 8px; }
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <h1>AuDiSenSe</h1>
+  <p>Vos oreilles visuelles — alertes en temps réel</p>
+</header>
+
+<div class="wrap">
+
+  <button id="btnEcoute" class="btn-main" type="button">🎤 Démarrer l'écoute</button>
+
+  <!-- Statut -->
+  <section class="card" aria-live="polite">
+    <h2>État</h2>
+    <div class="statut-ligne">
+      <span id="pastille" class="pastille"></span>
+      <span id="statutTexte">Prêt à démarrer</span>
+    </div>
+    <div id="statutDetail" class="statut-detail"></div>
+  </section>
+
+  <!-- Montre simulée -->
+  <section class="card">
+    <h2>Montre connectée (simulée)</h2>
+    <div class="montre-bloc">
+      <div id="montreEcran" class="montre-ecran">
+        <div id="montreTexte" class="montre-texte">—</div>
+      </div>
+      <div class="montre-legende">Les alertes sont relayées sur la montre jumelée.</div>
+    </div>
+  </section>
+
+  <!-- Scores -->
+  <section class="card">
+    <h2>Derniers scores d'analyse</h2>
+    <div id="scoresListe" class="scores-liste">
+      <div class="vide">Aucune analyse pour l'instant.</div>
+    </div>
+  </section>
+
+  <!-- Historique -->
+  <section class="card">
+    <h2>Historique (20 derniers)</h2>
+    <div id="histoListe" class="histo-liste">
+      <div class="vide">Chargement…</div>
+    </div>
+  </section>
+
+  <div class="separateur"></div>
+</div>
+
+<!-- Écran d'alerte plein écran -->
+<div id="ecranAlerte" role="alert" aria-live="assertive">
+  <div class="alerte-contenu">
+    <div id="alerteEmoji" class="alerte-emoji">🚨</div>
+    <div id="alerteNom" class="alerte-nom">—</div>
+    <div id="alerteMeta" class="alerte-meta">—</div>
+    <button id="alerteFermer" class="alerte-fermer" type="button">OK, j'ai vu</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* =========================================================
+     MODE DE FONCTIONNEMENT
+     MODE_CONTINU = false : écoute PONCTUELLE (1 seul enregistrement
+                            de 5 s avec compte à rebours).
+     MODE_CONTINU = true  : écoute en boucle (ancien comportement).
+     ========================================================= */
+  const MODE_CONTINU = false;
+
+  /* =========================================================
+     Références DOM
+     ========================================================= */
+  const btnEcoute      = document.getElementById("btnEcoute");
+  const pastille       = document.getElementById("pastille");
+  const statutTexte    = document.getElementById("statutTexte");
+  const statutDetail   = document.getElementById("statutDetail");
+  const montreEcran    = document.getElementById("montreEcran");
+  const montreTexte    = document.getElementById("montreTexte");
+  const scoresListe    = document.getElementById("scoresListe");
+  const histoListe     = document.getElementById("histoListe");
+  const ecranAlerte    = document.getElementById("ecranAlerte");
+  const alerteEmoji    = document.getElementById("alerteEmoji");
+  const alerteNom      = document.getElementById("alerteNom");
+  const alerteMeta     = document.getElementById("alerteMeta");
+  const alerteFermer   = document.getElementById("alerteFermer");
+
+  /* =========================================================
+     Constantes
+     ========================================================= */
+  const DUREE_CYCLE_MS = 5000;      // 5 secondes par enregistrement
+  const URL_ANALYSE    = "/analyser-bruit/";
+  const URL_HISTORIQUE = "/historique/";
+  const BRUITS_DANGER  = ["feu", "incendie", "verre", "sirène", "sirene", "bébé", "bebe", "alarme", "fumée", "fumee"];
+
+  /* =========================================================
+     État global
+     ========================================================= */
+  let ecouteActive       = false;   // utilisé uniquement en mode CONTINU
+  let cycleEnCours       = false;   // utilisé en mode PONCTUEL
+  let cycleCleanupDone   = false;
+  let fluxMedia          = null;
+  let enregistreur       = null;
+  let requeteEnCours     = false;
+  let timerCycle         = null;    // mode CONTINU
+  let compteAReboursInt  = null;    // mode PONCTUEL
+  let wakeLock           = null;
+  let mimeTypeChoisi     = "";
+  let extensionFichier   = "webm";
+  let minuterieAlerte    = null;
+  let serviceWorker      = null;
+
+  /* =========================================================
+     Utilitaires d'interface
+     ========================================================= */
+  function majStatut(type, texte, detail) {
+    pastille.className = "pastille " + (type || "");
+    statutTexte.textContent = texte || "";
+    statutDetail.textContent = detail || "";
+  }
+
+  function formaterHeure(date) {
+    const d = date instanceof Date ? date : new Date();
+    return d.toLocaleTimeString("fr-FR", { hour12: false });
+  }
+
+  /* =========================================================
+     Détection du format audio supporté
+     ========================================================= */
+  function choisirFormatAudio() {
+    const candidats = [
+      { type: "audio/webm;codecs=opus", ext: "webm" },
+      { type: "audio/webm", ext: "webm" },
+      { type: "audio/mp4", ext: "mp4" },
+      { type: "audio/ogg;codecs=opus", ext: "ogg" }
+    ];
+    if (typeof MediaRecorder === "undefined" || !MediaRecorder.isTypeSupported) {
+      return { type: "", ext: "webm" };
+    }
+    for (const c of candidats) {
+      try {
+        if (MediaRecorder.isTypeSupported(c.type)) return c;
+      } catch (e) { /* ignore */ }
+    }
+    return { type: "", ext: "webm" };
+  }
+
+  /* =========================================================
+     Wake Lock (garder l'écran allumé)
+     ========================================================= */
+  async function activerWakeLock() {
+    try {
+      if ("wakeLock" in navigator && navigator.wakeLock.request) {
+        wakeLock = await navigator.wakeLock.request("screen");
+        wakeLock.addEventListener("release", () => { wakeLock = null; });
+      }
+    } catch (e) {
+      // Non supporté ou refusé : on ignore proprement.
+    }
+  }
+
+  function libererWakeLock() {
+    if (wakeLock) {
+      try { wakeLock.release(); } catch (e) { /* ignore */ }
+      wakeLock = null;
+    }
+  }
+
+  /* =========================================================
+     Libération complète du microphone
+     ========================================================= */
+  function libererMicro() {
+    if (fluxMedia) {
+      try {
+        fluxMedia.getTracks().forEach(function (track) {
+          try { track.stop(); } catch (e) { /* ignore */ }
+        });
+      } catch (e) { /* ignore */ }
+      fluxMedia = null;
+    }
+    enregistreur = null;
+  }
+
+  /* =========================================================
+     Notifications système
+     ========================================================= */
+  async function demanderPermissionNotification() {
+    if (!("Notification" in window)) return;
+    try {
+      if (Notification.permission === "default") {
+        await Notification.requestPermission();
+      }
+    } catch (e) { /* ignore */ }
+  }
+
+  async function envoyerNotification(titre, corps) {
+    if (!("Notification" in window) || Notification.permission !== "granted") return;
+    try {
+      if (serviceWorker && serviceWorker.showNotification) {
+        await serviceWorker.showNotification(titre, {
+          body: corps,
+          icon: undefined,
+          tag: "audisense-alerte",
+          renotify: true
+        });
+      } else {
+        new Notification(titre, { body: corps, tag: "audisense-alerte" });
+      }
+    } catch (e) {
+      // Certains navigateurs mobiles refusent new Notification : on ignore.
+    }
+  }
+
+  /* =========================================================
+     Montre simulée
+     ========================================================= */
+  function allumerMontre(texte) {
+    montreTexte.textContent = texte || "ALERTE";
+    montreEcran.classList.add("allumee", "vibre");
+    setTimeout(() => montreEcran.classList.remove("vibre"), 1500);
+    setTimeout(() => montreEcran.classList.remove("allumee"), 8000);
+  }
+
+  /* =========================================================
+     Vibration téléphone
+     ========================================================= */
+  function faireVibrer(motif) {
+    if ("vibrate" in navigator && typeof navigator.vibrate === "function") {
+      try { navigator.vibrate(motif || [300, 120, 300, 120, 500]); } catch (e) { /* ignore */ }
+    }
+  }
+
+  /* =========================================================
+     Écran d'alerte
+     ========================================================= */
+  function estDanger(nom) {
+    if (!nom) return false;
+    const n = nom.toLowerCase();
+    return BRUITS_DANGER.some(function (mot) { return n.indexOf(mot) !== -1; });
+  }
+
+  function afficherAlerte(alerte) {
+    const danger = estDanger(alerte.nom_bruit_fr);
+    const dureeClignotement = Number(alerte.duree_clignotant_secondes) > 0
+      ? Number(alerte.duree_clignotant_secondes)
+      : 15;
+
+    alerteEmoji.textContent = alerte.emoji || "🚨";
+    alerteNom.textContent = alerte.nom_bruit_fr || "Bruit détecté";
+    alerteMeta.textContent =
+      (alerte.confiance ? "Confiance : " + alerte.confiance + "  •  " : "") +
+      "Détecté à " + (alerte.heure_detection || formaterHeure());
+
+    ecranAlerte.classList.remove("fond-danger", "fond-info");
+    ecranAlerte.classList.add(danger ? "fond-danger" : "fond-info");
+    ecranAlerte.classList.add("visible");
+
+    // Clignotement limité à la durée indiquée puis passage en affichage fixe.
+    clearTimeout(minuterieAlerte);
+    minuterieAlerte = setTimeout(function () {
+      ecranAlerte.classList.remove("fond-danger", "fond-info");
+    }, dureeClignotement * 1000);
+
+    // Vibration et montre
+    faireVibrer(danger ? [400, 120, 400, 120, 700] : [200, 100, 200]);
+    allumerMontre(alerte.notification_montre || alerte.nom_bruit_fr || "ALERTE");
+
+    // Notification système (relayée vers la montre jumelée)
+    envoyerNotification("SourdÉcoute — " + (alerte.nom_bruit_fr || "Alerte"),
+      alerte.notification_montre || alerte.nom_bruit_fr || "Alerte détectée");
+  }
+
+  function masquerAlerte() {
+    ecranAlerte.classList.remove("visible", "fond-danger", "fond-info");
+    clearTimeout(minuterieAlerte);
+  }
+  alerteFermer.addEventListener("click", masquerAlerte);
+
+  /* =========================================================
+     Barres de scores
+     ========================================================= */
+  function afficherScores(scores) {
+    if (!scores || typeof scores !== "object") {
+      scoresListe.innerHTML = '<div class="vide">Aucun score disponible.</div>';
+      return;
+    }
+    const entrees = Object.entries(scores)
+      .map(function (paire) {
+        const nom = paire[0];
+        const val = paire[1];
+        const nombre = parseFloat(String(val).replace("%", "").replace(",", "."));
+        return { nom: nom, valeur: isFinite(nombre) ? nombre : 0 };
+      })
+      .sort(function (a, b) { return b.valeur - a.valeur; });
+
+    if (entrees.length === 0) {
+      scoresListe.innerHTML = '<div class="vide">Aucun score disponible.</div>';
+      return;
+    }
+
+    scoresListe.innerHTML = "";
+    entrees.forEach(function (entree) {
+      const pct = Math.max(0, Math.min(100, entree.valeur));
+      const item = document.createElement("div");
+      item.className = "score-item";
+
+      const haut = document.createElement("div");
+      haut.className = "score-haut";
+      const nomEl = document.createElement("span");
+      nomEl.textContent = entree.nom;
+      const pctEl = document.createElement("span");
+      pctEl.className = "pct";
+      pctEl.textContent = pct.toFixed(1) + "%";
+      haut.appendChild(nomEl);
+      haut.appendChild(pctEl);
+
+      const piste = document.createElement("div");
+      piste.className = "score-piste";
+      const remplissage = document.createElement("div");
+      remplissage.className = "score-remplissage";
+      piste.appendChild(remplissage);
+
+      item.appendChild(haut);
+      item.appendChild(piste);
+      scoresListe.appendChild(item);
+
+      // Animation après insertion
+      requestAnimationFrame(function () { remplissage.style.width = pct + "%"; });
+    });
+  }
+
+  /* =========================================================
+     Historique
+     ========================================================= */
+  async function chargerHistorique() {
+    try {
+      const reponse = await fetch(URL_HISTORIQUE, { method: "GET", cache: "no-store" });
+      if (!reponse.ok) throw new Error("HTTP " + reponse.status);
+      const data = await reponse.json();
+      const liste = Array.isArray(data.historique) ? data.historique : [];
+      afficherHistorique(liste.slice(0, 20));
+    } catch (e) {
+      histoListe.innerHTML = '<div class="vide">Historique indisponible pour le moment.</div>';
+    }
+  }
+
+  function afficherHistorique(liste) {
+    if (!liste || liste.length === 0) {
+      histoListe.innerHTML = '<div class="vide">Aucun bruit détecté pour l\'instant.</div>';
+      return;
+    }
+    histoListe.innerHTML = "";
+    liste.forEach(function (entree) {
+      const item = document.createElement("div");
+      item.className = "histo-item";
+
+      const emoji = document.createElement("span");
+      emoji.className = "h-emoji";
+      emoji.textContent = entree.emoji || "🔔";
+
+      const nom = document.createElement("span");
+      nom.className = "h-nom";
+      nom.textContent = entree.nom || "Bruit inconnu";
+
+      const heure = document.createElement("span");
+      heure.className = "h-heure";
+      heure.textContent = entree.heure || "--:--:--";
+
+      item.appendChild(emoji);
+      item.appendChild(nom);
+      item.appendChild(heure);
+      histoListe.appendChild(item);
+    });
+  }
+
+  /* =========================================================
+     Envoi d'un enregistrement au serveur (commun aux 2 modes)
+     ========================================================= */
+  async function analyserEnregistrement(blob) {
+    if (requeteEnCours) return; // Ne pas lancer une requête si la précédente n'est pas terminée
+    requeteEnCours = true;
+    majStatut("analyse", "Analyse en cours…", "Envoi de l'extrait de 5 secondes.");
+
+    try {
+      const donnees = new FormData();
+      donnees.append("file", blob, "extrait." + extensionFichier);
+
+      const reponse = await fetch(URL_ANALYSE, { method: "POST", body: donnees });
+
+      if (!reponse.ok) {
+        let detail = "";
+        try {
+          const err = await reponse.json();
+          detail = err.detail || "";
+        } catch (e) { /* ignore */ }
+        throw new Error(detail || ("Erreur serveur HTTP " + reponse.status));
+      }
+
+      const data = await reponse.json();
+
+      if (data.alerte) {
+        // Alerte détectée
+        if (MODE_CONTINU) {
+          majStatut("ecoute", "Écoute en cours — alerte détectée", "");
+        } else {
+          majStatut("erreur", "Alerte détectée", "");
+        }
+        afficherAlerte(data.alerte);
+        if (data.diagnostics && data.diagnostics.scores) {
+          afficherScores(data.diagnostics.scores);
+        }
+        chargerHistorique();
+      } else if (data.statut === "silence") {
+        if (MODE_CONTINU) {
+          majStatut("ecoute", "Écoute en cours — silence", data.message || "");
+        } else {
+          majStatut("silence", "Silence détecté", data.message || "");
+        }
+      } else if (data.statut === "bruit_inconnu") {
+        if (MODE_CONTINU) {
+          majStatut("ecoute", "Écoute en cours — bruit incertain", data.message || "");
+        } else {
+          majStatut("inconnu", "Bruit incertain", data.message || "");
+        }
+        if (data.diagnostics && data.diagnostics.scores) {
+          afficherScores(data.diagnostics.scores);
+        }
+      } else {
+        if (MODE_CONTINU) {
+          majStatut("ecoute", "Écoute en cours", data.message || "");
+        } else {
+          majStatut("ecoute", "Analyse terminée", data.message || "");
+        }
+      }
+    } catch (e) {
+      const message = e && e.message ? e.message : "Erreur inconnue";
+      majStatut("erreur", "Erreur réseau ou serveur", message);
+      // L'écoute continue malgré l'erreur ponctuelle (mode continu)
+    } finally {
+      requeteEnCours = false;
+    }
+  }
+
+  /* =========================================================
+     MODE CONTINU — Cycle d'enregistrement en boucle
+     ========================================================= */
+  function demarrerCycle() {
+    if (!ecouteActive || !fluxMedia) return;
+    if (requeteEnCours) {
+      // On attend la fin de la requête avant de relancer un enregistrement
+      timerCycle = setTimeout(demarrerCycle, 400);
+      return;
+    }
+
+    let morceaux = [];
+    try {
+      const options = mimeTypeChoisi ? { mimeType: mimeTypeChoisi } : undefined;
+      enregistreur = new MediaRecorder(fluxMedia, options);
+    } catch (e) {
+      majStatut("erreur", "Enregistrement impossible", "Format audio non supporté par ce navigateur.");
+      arreterEcoute();
+      return;
+    }
+
+    enregistreur.ondataavailable = function (evt) {
+      if (evt.data && evt.data.size > 0) morceaux.push(evt.data);
+    };
+
+    enregistreur.onstop = function () {
+      const blob = new Blob(morceaux, { type: mimeTypeChoisi || "audio/webm" });
+      morceaux = [];
+      if (blob.size > 0) {
+        analyserEnregistrement(blob);
+      }
+      // Redémarrage immédiat d'un nouvel enregistrement autonome
+      if (ecouteActive) {
+        timerCycle = setTimeout(demarrerCycle, 150);
+      }
+    };
+
+    enregistreur.onerror = function () {
+      majStatut("erreur", "Erreur d'enregistrement", "Le microphone a rencontré un problème.");
+    };
+
+    try {
+      // PAS de timeslice : chaque fichier est autonome
+      enregistreur.start();
+    } catch (e) {
+      majStatut("erreur", "Démarrage d'enregistrement impossible", String(e && e.message || e));
+      return;
+    }
+
+    majStatut("ecoute", "Écoute en cours…", "Capture d'un extrait de 5 secondes.");
+
+    // Arrêt automatique après 5 secondes
+    timerCycle = setTimeout(function () {
+      if (enregistreur && enregistreur.state === "recording") {
+        try { enregistreur.stop(); } catch (e) { /* ignore */ }
+      }
+    }, DUREE_CYCLE_MS);
+  }
+
+  /* =========================================================
+     MODE CONTINU — Démarrage / arrêt
+     ========================================================= */
+  async function demarrerEcoute() {
+    if (ecouteActive) return;
+    majStatut("analyse", "Demande d'accès au microphone…", "");
+
+    demanderPermissionNotification();
+
+    try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error("API micro non disponible");
+      }
+      fluxMedia = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+      });
+    } catch (e) {
+      let msg = "Impossible d'accéder au microphone.";
+      if (e && (e.name === "NotAllowedError" || e.name === "PermissionDeniedError")) {
+        msg = "Accès au microphone refusé. Autorisez le micro dans les réglages du navigateur puis réessayez.";
+      } else if (e && e.name === "NotFoundError") {
+        msg = "Aucun microphone détecté sur cet appareil.";
+      } else if (e && e.name === "NotReadableError") {
+        msg = "Le microphone est déjà utilisé par une autre application.";
+      }
+      majStatut("erreur", "Microphone indisponible", msg);
+      fluxMedia = null;
+      return;
+    }
+
+    ecouteActive = true;
+    btnEcoute.textContent = "⏹ Arrêter";
+    btnEcoute.classList.add("actif");
+
+    const format = choisirFormatAudio();
+    mimeTypeChoisi = format.type;
+    extensionFichier = format.ext;
+
+    activerWakeLock();
+
+    majStatut("ecoute", "Écoute en cours…", "Le micro est actif. Analyse toutes les 5 secondes.");
+    demarrerCycle();
+  }
+
+  function arreterEcoute() {
+    ecouteActive = false;
+    btnEcoute.textContent = "🎤 Démarrer l'écoute";
+    btnEcoute.classList.remove("actif");
+
+    clearTimeout(timerCycle);
+    timerCycle = null;
+
+    if (enregistreur) {
+      try {
+        if (enregistreur.state !== "inactive") enregistreur.stop();
+      } catch (e) { /* ignore */ }
+      enregistreur = null;
+    }
+
+    libererMicro();
+    libererWakeLock();
+    majStatut("", "Écoute arrêtée", "Appuyez sur Démarrer pour reprendre l'écoute.");
+  }
+
+  /* =========================================================
+     MODE PONCTUEL — Compte à rebours visible
+     ========================================================= */
+  function demarrerCompteARebours(duree) {
+    let reste = duree;
+    const afficher = function () {
+      btnEcoute.textContent = "⏺ Enregistrement… " + reste + " s";
+      majStatut("ecoute",
+        "Enregistrement en cours… " + reste,
+        "Capture de " + duree + " secondes. Parlez ou laissez l'application écouter l'ambiance.");
+    };
+    afficher();
+    compteAReboursInt = setInterval(function () {
+      reste--;
+      if (reste > 0) {
+        afficher();
+      } else {
+        clearInterval(compteAReboursInt);
+        compteAReboursInt = null;
+      }
+    }, 1000);
+  }
+
+  /* =========================================================
+     MODE PONCTUEL — Fin de cycle (idempotent)
+     ========================================================= */
+  function finaliserCycle() {
+    if (cycleCleanupDone) return;
+    cycleCleanupDone = true;
+
+    if (compteAReboursInt) {
+      clearInterval(compteAReboursInt);
+      compteAReboursInt = null;
+    }
+    libererMicro();
+    libererWakeLock();
+
+    cycleEnCours = false;
+    btnEcoute.disabled = false;
+    btnEcoute.classList.remove("actif");
+    btnEcoute.textContent = "🔄 Nouvelle écoute";
+  }
+
+  /* =========================================================
+     MODE PONCTUEL — Lancement d'un cycle unique
+     ========================================================= */
+  async function lancerCyclePonctuel() {
+    if (cycleEnCours) return;
+    cycleEnCours = true;
+    cycleCleanupDone = false;
+    btnEcoute.disabled = true;
+    btnEcoute.classList.add("actif");
+    btnEcoute.textContent = "⏺ Enregistrement…";
+
+    // Effacer l'ancien résultat visuel
+    masquerAlerte();
+
+    // Permission notifications
+    demanderPermissionNotification();
+
+    // Accès au micro
+    try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error("API micro non disponible");
+      }
+      fluxMedia = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+      });
+    } catch (e) {
+      let msg = "Impossible d'accéder au microphone.";
+      if (e && (e.name === "NotAllowedError" || e.name === "PermissionDeniedError")) {
+        msg = "Accès au microphone refusé. Autorisez le micro dans les réglages du navigateur puis réessayez.";
+      } else if (e && e.name === "NotFoundError") {
+        msg = "Aucun microphone détecté sur cet appareil.";
+      } else if (e && e.name === "NotReadableError") {
+        msg = "Le microphone est déjà utilisé par une autre application.";
+      }
+      majStatut("erreur", "Microphone indisponible", msg);
+      fluxMedia = null;
+      cycleEnCours = false;
+      btnEcoute.disabled = false;
+      btnEcoute.textContent = "🎤 Démarrer l'écoute";
+      btnEcoute.classList.remove("actif");
+      return;
+    }
+
+    activerWakeLock();
+
+    const format = choisirFormatAudio();
+    mimeTypeChoisi = format.type;
+    extensionFichier = format.ext;
+
+    let morceaux = [];
+    try {
+      const options = mimeTypeChoisi ? { mimeType: mimeTypeChoisi } : undefined;
+      enregistreur = new MediaRecorder(fluxMedia, options);
+    } catch (e) {
+      majStatut("erreur", "Enregistrement impossible", "Format audio non supporté par ce navigateur.");
+      finaliserCycle();
+      return;
+    }
+
+    enregistreur.ondataavailable = function (evt) {
+      if (evt.data && evt.data.size > 0) morceaux.push(evt.data);
+    };
+
+    enregistreur.onstop = async function () {
+      if (compteAReboursInt) {
+        clearInterval(compteAReboursInt);
+        compteAReboursInt = null;
+      }
+
+      // Libération complète du micro
+      libererMicro();
+
+      const blob = new Blob(morceaux, { type: mimeTypeChoisi || "audio/webm" });
+      morceaux = [];
+
+      if (blob.size > 0) {
+        btnEcoute.textContent = "⏳ Analyse en cours…";
+        majStatut("analyse", "Analyse en cours…", "Envoi de l'extrait au serveur.");
+        try {
+          await analyserEnregistrement(blob);
+        } catch (e) {
+          // analyserEnregistrement gère ses propres erreurs
+        }
+      } else {
+        majStatut("erreur", "Aucun son capturé", "L'enregistrement n'a produit aucune donnée exploitable.");
+      }
+
+      finaliserCycle();
+    };
+
+    enregistreur.onerror = function () {
+      majStatut("erreur", "Erreur d'enregistrement", "Le microphone a rencontré un problème.");
+      finaliserCycle();
+    };
+
+    try {
+      // Un seul enregistrement, sans timeslice
+      enregistreur.start();
+    } catch (e) {
+      majStatut("erreur", "Démarrage d'enregistrement impossible", String(e && e.message || e));
+      finaliserCycle();
+      return;
+    }
+
+    // Compte à rebours visible
+    demarrerCompteARebours(5);
+
+    // Arrêt automatique après 5 secondes
+    setTimeout(function () {
+      if (enregistreur && enregistreur.state === "recording") {
+        try { enregistreur.stop(); } catch (e) { /* ignore */ }
+      }
+    }, DUREE_CYCLE_MS);
+  }
+
+  /* =========================================================
+     Gestionnaire du bouton principal
+     ========================================================= */
+  btnEcoute.addEventListener("click", function () {
+    if (MODE_CONTINU) {
+      if (ecouteActive) arreterEcoute();
+      else demarrerEcoute();
+    } else {
+      if (!cycleEnCours) lancerCyclePonctuel();
+    }
+  });
+
+  /* =========================================================
+     Service Worker (si possible) pour les notifications
+     ========================================================= */
+  async function initServiceWorker() {
+    if (!("serviceWorker" in navigator)) return;
+    try {
+      const code = `
+        self.addEventListener("notificationclick", (event) => {
+          event.notification.close();
+          event.waitUntil(clients.openWindow("/"));
+        });
+      `;
+      const blob = new Blob([code], { type: "text/javascript" });
+      const url = URL.createObjectURL(blob);
+      const reg = await navigator.serviceWorker.register(url);
+      serviceWorker = reg;
+      try { await navigator.serviceWorker.ready; } catch (e) {}
+    } catch (e) {
+      // Service worker indisponible : on utilisera new Notification
+      serviceWorker = null;
+    }
+  }
+
+  /* =========================================================
+     Réactivation du Wake Lock après retour au premier plan
+     ========================================================= */
+  document.addEventListener("visibilitychange", function () {
+    const actif = ecouteActive || cycleEnCours;
+    if (document.visibilityState === "visible" && actif && !wakeLock) {
+      activerWakeLock();
+    }
+  });
+
+  /* =========================================================
+     Initialisation
+     ========================================================= */
+  function initialiser() {
+    if (typeof MediaRecorder === "undefined") {
+      majStatut("erreur", "Navigateur non compatible", "L'API MediaRecorder est requise pour l'écoute.");
+      btnEcoute.disabled = true;
+    }
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      majStatut("erreur", "Microphone non disponible", "Ce navigateur ne permet pas l'accès au microphone.");
+      btnEcoute.disabled = true;
+    }
+
+    initServiceWorker();
+    chargerHistorique();
+    majStatut("", "Prêt à démarrer", "Appuyez sur le bouton pour activer l'écoute des bruits domestiques.");
+  }
+
+  initialiser();
+})();
+</script>
+</body>
+</html>
